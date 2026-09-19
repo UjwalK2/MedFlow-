@@ -58,3 +58,173 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* ==========================================================================
+   White Background Situations & High-Contrast Black Text Rules
+   ========================================================================== */
+
+/* 1. Containers and elements with white or light backgrounds */
+.bg-white,
+[class*="bg-white"],
+.bg-zinc-50,
+.bg-zinc-100,
+.bg-gray-50,
+.bg-gray-100,
+.bg-slate-50,
+.bg-slate-100,
+.light,
+[data-theme="light"] {
+  color: #09090b !important;
+}
+
+/* Ensure text inside white/light containers overrides hardcoded light colors to black */
+.bg-white h1, .bg-white h2, .bg-white h3, .bg-white h4, .bg-white h5, .bg-white h6,
+.bg-white p, .bg-white label, .bg-white div,
+[class*="bg-white"] h1, [class*="bg-white"] h2, [class*="bg-white"] h3, [class*="bg-white"] h4,
+[class*="bg-white"] p, [class*="bg-white"] label,
+.bg-zinc-100 h1, .bg-zinc-100 h2, .bg-zinc-100 h3, .bg-zinc-100 p,
+.light h1, .light h2, .light h3, .light p,
+[data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3, [data-theme="light"] p {
+  color: #09090b;
+}
+
+/* Invert light text utility classes when located inside white/light backgrounds */
+.bg-white .text-white,
+.bg-white .text-zinc-100,
+.bg-white .text-zinc-200,
+.bg-white .text-zinc-300,
+[class*="bg-white"] .text-white,
+[class*="bg-white"] .text-zinc-100,
+[class*="bg-white"] .text-zinc-200,
+[class*="bg-white"] .text-zinc-300,
+.light .text-white,
+.light .text-zinc-100,
+.light .text-zinc-200,
+.light .text-zinc-300,
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-zinc-100,
+[data-theme="light"] .text-zinc-200,
+[data-theme="light"] .text-zinc-300 {
+  color: #09090b !important;
+}
+
+.bg-white .text-zinc-400,
+.bg-white .text-zinc-500,
+[class*="bg-white"] .text-zinc-400,
+[class*="bg-white"] .text-zinc-500,
+.light .text-zinc-400,
+.light .text-zinc-500,
+[data-theme="light"] .text-zinc-400,
+[data-theme="light"] .text-zinc-500 {
+  color: #52525b !important; /* Zinc 600 for clear readable secondary text */
+}
+
+/* 2. Global Light Theme (White Background Situation across the app) */
+html:not(.dark) {
+  color-scheme: light;
+}
+
+html:not(.dark) body,
+html:not(.dark) .bg-zinc-950 {
+  background-color: #f8fafc !important; /* Slate 50 clean light canvas */
+  color: #0f172a !important;
+}
+
+html:not(.dark) header,
+html:not(.dark) .bg-zinc-900\/75 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .bg-zinc-900,
+html:not(.dark) .bg-zinc-900\/90,
+html:not(.dark) .bg-zinc-900\/80,
+html:not(.dark) .bg-zinc-900\/60 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+}
+
+html:not(.dark) .bg-zinc-850,
+html:not(.dark) .bg-zinc-800,
+html:not(.dark) .bg-zinc-800\/80,
+html:not(.dark) .bg-zinc-800\/50,
+html:not(.dark) .bg-zinc-800\/40 {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) .text-white,
+html:not(.dark) .text-zinc-100,
+html:not(.dark) .text-zinc-200,
+html:not(.dark) .text-zinc-300 {
+  color: #0f172a !important; /* Slate 900 / pure dark text */
+}
+
+html:not(.dark) .text-zinc-400,
+html:not(.dark) .text-zinc-500 {
+  color: #475569 !important; /* Slate 600 accessible secondary text */
+}
+
+html:not(.dark) .border-zinc-800,
+html:not(.dark) .border-zinc-800\/80,
+html:not(.dark) .border-zinc-800\/70,
+html:not(.dark) .border-zinc-800\/50,
+html:not(.dark) .border-zinc-750,
+html:not(.dark) .border-zinc-700,
+html:not(.dark) .border-zinc-700\/60,
+html:not(.dark) .border-zinc-700\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+/* 3. Form inputs, dropdowns, and select options */
+select option {
+  background-color: #ffffff;
+  color: #09090b;
+}
+
+.dark select option {
+  background-color: #18181b;
+  color: #f4f4f5;
+}
+
+html:not(.dark) input,
+html:not(.dark) select,
+html:not(.dark) textarea {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* 4. Native Browser Autocomplete / Autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #09090b;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover, 
+.dark input:-webkit-autofill:focus, 
+.dark textarea:-webkit-autofill,
+.dark select:-webkit-autofill {
+  -webkit-text-fill-color: #f4f4f5;
+}
+
+/* 5. Print Media (always white background, black text) */
+@media print {
+  *, ::before, ::after {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}

@@ -11,6 +11,8 @@ import {
   Sparkles,
   Users,
   Play,
+  Sun,
+  Moon,
 } from "lucide-react"
 import { api, type OptionsResponse, type SimulateResponse } from "@/api"
 import { DraggableWidgetGrid, type GridItem } from "@/components/ui/draggable-widget-grid"
@@ -27,6 +29,19 @@ export default function App() {
   const [simResult, setSimResult] = useState<SimulateResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isDark, setIsDark] = useState(true)
+
+  const toggleTheme = () => {
+    const nextDark = !isDark
+    setIsDark(nextDark)
+    if (nextDark) {
+      document.documentElement.classList.add("dark")
+      document.documentElement.classList.remove("light")
+    } else {
+      document.documentElement.classList.remove("dark")
+      document.documentElement.classList.add("light")
+    }
+  }
 
   useEffect(() => {
     // Initial fetch of options and baseline simulation
@@ -148,6 +163,26 @@ export default function App() {
               Connecting to backend...
             </div>
           )}
+
+          {/* White / Dark Background Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle light/dark background theme"
+            className="px-2.5 py-1.5 rounded-lg bg-zinc-850 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+            title={isDark ? "Switch to White / Light Background" : "Switch to Dark Background"}
+          >
+            {isDark ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline text-zinc-300">Light Mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="hidden sm:inline text-zinc-700">Dark Mode</span>
+              </>
+            )}
+          </button>
         </div>
       </header>
 

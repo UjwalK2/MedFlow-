@@ -64,7 +64,7 @@ export function RunWidget({
           className="px-2.5 py-1.5 rounded-lg bg-zinc-850 border border-zinc-750 text-xs text-zinc-200 focus:outline-none focus:border-rose-500"
         >
           {(options?.scenarios || []).map((s) => (
-            <option key={s.id} value={s.id}>
+            <option key={s.id} value={s.id} className="bg-white text-zinc-950 dark:bg-zinc-900 dark:text-zinc-100">
               {s.name}
             </option>
           ))}
@@ -76,7 +76,7 @@ export function RunWidget({
           className="px-2.5 py-1.5 rounded-lg bg-zinc-850 border border-zinc-750 text-xs text-zinc-200 focus:outline-none focus:border-rose-500"
         >
           {(options?.policies || []).map((p) => (
-            <option key={p.id} value={p.id}>
+            <option key={p.id} value={p.id} className="bg-white text-zinc-950 dark:bg-zinc-900 dark:text-zinc-100">
               {p.name.split("(")[0]}
             </option>
           ))}
