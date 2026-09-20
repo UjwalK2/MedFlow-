@@ -1,4 +1,4 @@
-"""AI-driven Emergency Department triage assistant using Google GenAI with robust rule-based fallback."""
+"""AI-driven Emergency Department triage assistant using Groq with robust rule-based fallback."""
 
 from __future__ import annotations
 
@@ -47,6 +47,33 @@ ESI_1_PATTERNS = [
     r"\bunconscious\b",
     r"\bgcs\s*<\s*8\b",
     r"\bmassive hemorrhage\b|\bmassive bleeding\b",
+]
+
+# Eye injury patterns (ESI 2)
+EYE_INJURY_PATTERNS = [
+    r"\beye\b",
+    r"\bvision\b|\bvisual\b",
+    r"\bchemical burn\b",
+    r"\bfirecracker\b|\bfirework\b",
+    r"\bwelding\b|\bwelder\b",
+    r"\bforeign body eye\b|\bforeign body in eye\b|\bocular foreign body\b",
+    r"\bocular\b|\bcornea\b|\bcorneal\b|\bglobe rupture\b|\bhyphema\b",
+]
+
+# Severe / extensive burn patterns (ESI 2)
+SEVERE_BURN_PATTERNS = [
+    r"\bsevere burn\b|\bsevere burns\b",
+    r"\bextensive burn\b|\bextensive burns\b",
+    r"\bthird degree\b|\b3rd degree\b|\bfull thickness\b",
+    r"\binhalation burn\b|\binhalation injury\b",
+]
+
+# General burn / scald / body surface area patterns (ESI 3)
+GENERAL_BURN_PATTERNS = [
+    r"\bburn\b|\bburns\b|\bscalding\b|\bscald\b",
+    r"\bsecond degree\b|\b2nd degree\b|\bpartial thickness\b",
+    r"\b\d+%\s*(t?bsa|body surface)\b",
+    r"\b(t?bsa)\b|\bbody surface area\b",
 ]
 
 ESI_2_PATTERNS = [
@@ -108,7 +135,41 @@ def _rule_based_triage(text: str) -> dict[str, Any]:
             "source": "rule_fallback",
         }
 
-    # Check ESI 2 (Emergent)
+    # Check Eye Injury (Emergent - ESI 2)
+    matched_eye = [p.replace(r"\b", "") for p in EYE_INJURY_PATTERNS if re.search(p, clean_text)]
+    if matched_eye:
+        return {
+            "esi": 2,
+            "required_resources": ["bed", "doctor", "nurse", "specialist"],
+            "estimated_service_minutes": 60.0,
+            "deterioration_risk": "moderate",
+            "red_flags": matched_eye,
+            "rationale": f"Rule-based fallback: emergent ocular/eye trauma risk detected ({', '.join(matched_eye)}).",
+            "source": "rule_fallback",
+        }
+
+    # Check Severe / Extensive Burns (Emergent - ESI 2)
+    has_burn_mention = any(re.search(p, clean_text) for p in GENERAL_BURN_PATTERNS) or "burn" in clean_text or "scald" in clean_text
+    is_severe_burn = (
+        any(re.search(p, clean_text) for p in SEVERE_BURN_PATTERNS)
+        or (has_burn_mention and bool(re.search(r"\b(severe|extensive)\b", clean_text)))
+        or (has_burn_mention and bool(re.search(r"\b([2-9]\d|\d{3})%\s*(t?bsa|body surface)?\b", clean_text)))
+    )
+    if is_severe_burn:
+        matched_burn_flags = [p.replace(r"\b", "") for p in SEVERE_BURN_PATTERNS if re.search(p, clean_text)]
+        if not matched_burn_flags:
+            matched_burn_flags = ["severe/extensive burn"]
+        return {
+            "esi": 2,
+            "required_resources": ["bed", "doctor", "nurse"],
+            "estimated_service_minutes": 70.0,
+            "deterioration_risk": "high",
+            "red_flags": matched_burn_flags,
+            "rationale": f"Rule-based fallback: severe/extensive burn presentation requiring emergent multi-resource resuscitation ({', '.join(matched_burn_flags)}).",
+            "source": "rule_fallback",
+        }
+
+    # Check General ESI 2 (Emergent)
     matched_flags = [p.replace(r"\b", "") for p in ESI_2_PATTERNS if re.search(p, clean_text)]
     if matched_flags:
         return {
@@ -118,6 +179,21 @@ def _rule_based_triage(text: str) -> dict[str, Any]:
             "deterioration_risk": "high" if "chest pain" in clean_text or "breathing" in clean_text else "moderate",
             "red_flags": matched_flags,
             "rationale": f"Rule-based fallback: high-risk emergent symptoms detected ({', '.join(matched_flags)}).",
+            "source": "rule_fallback",
+        }
+
+    # Check General Burns / Scalds / BSA (Urgent - ESI 3)
+    if has_burn_mention:
+        matched_burn = [p.replace(r"\b", "") for p in GENERAL_BURN_PATTERNS if re.search(p, clean_text)]
+        if not matched_burn:
+            matched_burn = ["burn presentation"]
+        return {
+            "esi": 3,
+            "required_resources": ["bed", "doctor", "nurse"],
+            "estimated_service_minutes": 40.0,
+            "deterioration_risk": "moderate",
+            "red_flags": matched_burn,
+            "rationale": f"Rule-based fallback: urgent burn/scald presentation requiring specialized wound care and multi-resource management ({', '.join(matched_burn)}).",
             "source": "rule_fallback",
         }
 
@@ -147,6 +223,18 @@ def _rule_based_triage(text: str) -> dict[str, Any]:
             "source": "rule_fallback",
         }
 
+    # Catch-all burn check: any note mentioning "burn" that hasn't matched above must be ESI 3 (never ESI 5)
+    if "burn" in clean_text or "scald" in clean_text:
+        return {
+            "esi": 3,
+            "required_resources": ["bed", "doctor"],
+            "estimated_service_minutes": 30.0,
+            "deterioration_risk": "moderate",
+            "red_flags": ["burn presentation"],
+            "rationale": "Rule-based fallback: burn presentation default (never non-urgent).",
+            "source": "rule_fallback",
+        }
+
     # Default ESI 5 (Non-Urgent)
     return {
         "esi": 5,
@@ -163,38 +251,38 @@ def triage_note(text: str) -> dict[str, Any]:
     """
     Evaluates a clinical triage note and returns structured ESI triage predictions.
 
-    Uses the Google GenAI SDK if GEMINI_API_KEY is configured. If the key is absent,
+    Uses Groq (via OpenAI-compatible client) if GROQ_API_KEY is configured. If the key is absent,
     the call fails, or invalid JSON is returned, transparently falls back to
     the keyword-based clinical rules with source: "rule_fallback".
     """
     if not text or not text.strip():
         return _rule_based_triage("")
 
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    api_key = os.environ.get("GROQ_API_KEY", "").strip()
     if not api_key:
-        logger.debug("GEMINI_API_KEY not set. Using rule-based fallback.")
+        logger.debug("GROQ_API_KEY not set. Using rule-based fallback.")
         return _rule_based_triage(text)
 
     try:
-        from google import genai
-        from google.genai import types
+        from openai import OpenAI
 
-        model_name = os.environ.get("MEDFLOW_MODEL", "gemini-3.5-flash")
-        client = genai.Client(api_key=api_key)
-
-        config = types.GenerateContentConfig(
-            system_instruction=SYSTEM_INSTRUCTION,
-            temperature=0.1,
-            response_mime_type="application/json",
+        model_name = os.environ.get("MEDFLOW_MODEL", "llama-3.3-70b-versatile")
+        client = OpenAI(
+            api_key=os.environ["GROQ_API_KEY"],
+            base_url="https://api.groq.com/openai/v1",
         )
 
-        response = client.models.generate_content(
+        response = client.chat.completions.create(
             model=model_name,
-            contents=f"Triage Note:\n{text}",
-            config=config,
+            messages=[
+                {"role": "system", "content": SYSTEM_INSTRUCTION},
+                {"role": "user", "content": f"Triage Note:\n{text}"},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.1,
         )
 
-        raw_text = (response.text or "").strip()
+        raw_text = (response.choices[0].message.content or "").strip()
         # Clean potential markdown fences
         if raw_text.startswith("```"):
             raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
@@ -231,8 +319,9 @@ def triage_note(text: str) -> dict[str, Any]:
             "source": "model",
         }
 
-    except Exception as exc:
-        logger.warning(f"GenAI triage failed ({exc}). Falling back to rule-based triage.")
+    except Exception as e:
+        print(f"Groq call failed: {e}")
+        logger.warning(f"Groq triage failed ({e}). Falling back to rule-based triage.")
         return _rule_based_triage(text)
 
 

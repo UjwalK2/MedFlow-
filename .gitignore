@@ -45,6 +45,7 @@ lerna-debug.log*
 
 # Sensitive Credentials / Local Environment Overrides
 # Note: Keep .env.example committed as template
+.env
 .env.local
 .env.*.local
 

@@ -1,5 +1,6 @@
 """Unit tests for AI triage service and fallback rule classifier."""
 
+import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -37,9 +38,63 @@ class TestAITriage(unittest.TestCase):
         self.assertEqual(res5["esi"], 5)
         self.assertEqual(res5["source"], "rule_fallback")
 
+    def test_eye_injury_red_flags(self):
+        """Verify eye injury and ocular trauma terms map to ESI 2."""
+        eye_cases = [
+            "Chemical burn to right eye while cleaning with bleach",
+            "Foreign body eye sensation after grinding metal",
+            "Firecracker blast injury with vision loss",
+            "Welding arc flash exposure with severe bilateral eye pain",
+            "Decreased vision and acute eye trauma following motor vehicle crash",
+            "Foreign body in eye after construction work",
+        ]
+        for note in eye_cases:
+            res = _rule_based_triage(note)
+            self.assertEqual(res["esi"], 2, f"Failed for note: {note}")
+            self.assertEqual(res["source"], "rule_fallback")
+            self.assertIn("doctor", res["required_resources"])
+
+    def test_burn_severity_differentiation(self):
+        """Verify severe/extensive burns map to ESI 2 while general burns map to ESI 3."""
+        # Severe / Extensive -> ESI 2
+        severe_burns = [
+            "Severe burn across chest and arms from grease fire",
+            "Extensive scald injury covering 30% BSA",
+            "Third degree burn on legs",
+            "Inhalation burn with soot around nares",
+        ]
+        for note in severe_burns:
+            res = _rule_based_triage(note)
+            self.assertEqual(res["esi"], 2, f"Expected ESI 2 for: {note}")
+            self.assertEqual(res["source"], "rule_fallback")
+
+        # General Burns / Scalds -> ESI 3
+        general_burns = [
+            "Hot soup scald on left forearm with blistering",
+            "Second degree burn on hand from toaster",
+            "Scalding water burn to thigh, 5% body surface area",
+        ]
+        for note in general_burns:
+            res = _rule_based_triage(note)
+            self.assertEqual(res["esi"], 3, f"Expected ESI 3 for: {note}")
+            self.assertEqual(res["source"], "rule_fallback")
+
+    def test_burn_catch_all_never_non_urgent(self):
+        """Verify any note mentioning burn defaults to ESI 3 and never falls to ESI 5."""
+        catch_all_cases = [
+            "Burn on index finger",
+            "Minor burn from iron",
+            "Small scald on wrist",
+            "Patient says burn happened yesterday",
+        ]
+        for note in catch_all_cases:
+            res = _rule_based_triage(note)
+            self.assertIn(res["esi"], [2, 3], f"Burn note '{note}' must not be non-urgent, got ESI {res['esi']}")
+            self.assertEqual(res["source"], "rule_fallback")
+
     def test_triage_note_fallback_when_api_key_unset(self):
-        """When GEMINI_API_KEY is unset or empty, triage_note returns rule_fallback."""
-        with patch.dict("os.environ", {"GEMINI_API_KEY": ""}):
+        """When GROQ_API_KEY is unset or empty, triage_note returns rule_fallback."""
+        with patch.dict("os.environ", {"GROQ_API_KEY": ""}):
             res = triage_note("Sudden onset chest pain")
             self.assertEqual(res["esi"], 2)
             self.assertEqual(res["source"], "rule_fallback")
@@ -53,14 +108,14 @@ class TestAITriage(unittest.TestCase):
             self.assertEqual(r["esi"], 4)
             self.assertEqual(r["source"], "rule_fallback")
 
-    @patch("google.genai.Client")
-    def test_triage_note_model_success(self, mock_client_cls):
-        """Verify that when GenAI model responds with valid JSON, source is 'model'."""
+    def test_triage_note_model_success(self):
+        """Verify that when Groq model responds with valid JSON, source is 'model'."""
+        mock_openai_module = MagicMock()
         mock_client = MagicMock()
-        mock_client_cls.return_value = mock_client
+        mock_openai_module.OpenAI.return_value = mock_client
 
-        mock_response = MagicMock()
-        mock_response.text = """```json
+        mock_choice = MagicMock()
+        mock_choice.message.content = """```json
         {
           "esi": 2,
           "required_resources": ["bed", "doctor", "nurse"],
@@ -71,11 +126,15 @@ class TestAITriage(unittest.TestCase):
           "source": "model"
         }
         ```"""
-        mock_client.models.generate_content.return_value = mock_response
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_client.chat.completions.create.return_value = mock_response
 
-        with patch.dict("os.environ", {"GEMINI_API_KEY": "fake-test-key", "MEDFLOW_MODEL": "gemini-3.5-flash"}):
-            res = triage_note("55yo with chest pain radiating to jaw")
-            self.assertEqual(res["esi"], 2)
-            self.assertEqual(res["source"], "model")
-            self.assertEqual(res["deterioration_risk"], "high")
-            self.assertEqual(res["red_flags"], ["active chest pain", "diaphoresis"])
+        with patch.dict("sys.modules", {"openai": mock_openai_module}):
+            with patch.dict("os.environ", {"GROQ_API_KEY": "fake-groq-key", "MEDFLOW_MODEL": "llama-3.3-70b-versatile"}):
+                res = triage_note("55yo with chest pain radiating to jaw")
+                self.assertEqual(res["esi"], 2)
+                self.assertEqual(res["source"], "model")
+                self.assertEqual(res["deterioration_risk"], "high")
+                self.assertEqual(res["red_flags"], ["active chest pain", "diaphoresis"])
+

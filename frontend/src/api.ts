@@ -350,7 +350,7 @@ export const api = {
   },
 
   /**
-   * Checks whether the Gemini API key is configured.
+   * Checks whether the Groq API key is configured.
    */
   getAIStatus(): Promise<AIStatusResponse> {
     return fetchJson<AIStatusResponse>("/api/ai-status")
@@ -359,7 +359,7 @@ export const api = {
   /**
    * Service health check.
    */
-  health(): Promise<{ status: string; gemini_api_key_configured: boolean }> {
-    return fetchJson<{ status: string; gemini_api_key_configured: boolean }>("/health")
+  health(): Promise<{ status: string; groq_api_key_configured: boolean }> {
+    return fetchJson<{ status: string; groq_api_key_configured: boolean }>("/health")
   },
 }

@@ -2,6 +2,6 @@ fastapi
 uvicorn
 numpy
 scipy
-google-genai
+openai
 pytest
 python-dotenv

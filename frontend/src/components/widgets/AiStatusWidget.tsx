@@ -19,7 +19,7 @@ export function AiStatusWidget() {
   }, [])
 
   const isConfigured = aiStatus?.configured ?? false
-  const modelName = aiStatus?.model ?? "gemini-3.5-flash"
+  const modelName = aiStatus?.model ?? "llama-3.3-70b-versatile"
 
   return (
     <WidgetShell>
@@ -30,7 +30,7 @@ export function AiStatusWidget() {
           <span className="flex items-center gap-2">
             {isConfigured ? (
               <>
-                <span className="text-emerald-400">Gemini Online</span>
+                <span className="text-emerald-400">Groq Online</span>
               </>
             ) : (
               <>
@@ -41,7 +41,7 @@ export function AiStatusWidget() {
         }
         subtext={
           isConfigured
-            ? `Google GenAI Active (${modelName})`
+            ? `Groq Llama Active (${modelName})`
             : "Deterministic clinical keyword triage active"
         }
         badge={
@@ -69,7 +69,7 @@ export function AiStatusWidget() {
             ) : isConfigured ? (
               <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
                 <WidgetDot color="bg-emerald-400" pulse />
-                GEMINI_API_KEY Configured
+                GROQ_API_KEY Configured
               </span>
             ) : (
               <span className="text-amber-400 font-semibold flex items-center gap-1.5">

@@ -44,7 +44,7 @@ export function TriageWidget() {
             onChange={(e) => setNote(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleTriage()}
             placeholder="Clinical intake triage note..."
-            className="flex-1 px-3 py-1.5 rounded-lg bg-zinc-850 border border-zinc-750 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-rose-500 transition-colors"
+            className="flex-1 px-3 py-1.5 rounded-lg bg-background text-foreground placeholder:text-muted-foreground border border-input text-xs focus:outline-none focus:ring-1 focus:ring-rose-500 focus:border-rose-500 transition-colors"
           />
           <button
             onClick={() => handleTriage()}

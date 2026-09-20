@@ -131,21 +131,21 @@ def health_check():
     """Service health check."""
     return {
         "status": "healthy",
-        "gemini_api_key_configured": bool(os.environ.get("GEMINI_API_KEY")),
+        "groq_api_key_configured": bool(os.environ.get("GROQ_API_KEY")),
     }
 
 
 @app.get("/api/ai-status", response_model=AIStatusResponse)
 def get_ai_status():
-    """Checks whether Gemini API key is configured in the environment."""
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    model = os.environ.get("MEDFLOW_MODEL", "gemini-3.5-flash")
+    """Checks whether Groq API key is configured in the environment."""
+    api_key = os.environ.get("GROQ_API_KEY", "").strip()
+    model = os.environ.get("MEDFLOW_MODEL", "llama-3.3-70b-versatile")
     configured = bool(api_key)
     return AIStatusResponse(
         configured=configured,
         model=model,
         status="ready" if configured else "missing_api_key",
-        details="Google GenAI configured and ready" if configured else "GEMINI_API_KEY unset; rule-based fallback active",
+        details="Groq AI configured and ready" if configured else "GROQ_API_KEY unset; rule-based fallback active",
     )
 
 
@@ -264,7 +264,7 @@ def compare_policies(req: CompareRequest) -> dict[str, Any]:
 @app.post("/api/triage", response_model=TriageResponse)
 def triage_single(req: TriageNoteRequest):
     """
-    Evaluates a single triage note using Gemini GenAI (with rule fallback).
+    Evaluates a single triage note using Groq AI (with rule fallback).
     """
     result = triage_note(req.note)
     return TriageResponse(**result)
