@@ -1,441 +1,308 @@
-# MedFlow
+# MedFlow — Intelligent Emergency Department Queue & Triage Platform
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-18.3-61DAFB.svg?style=flat&logo=react&logoColor=black)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6.svg?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-6.2-646CFF.svg?style=flat&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![TailwindCSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC.svg?style=flat&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Groq](https://img.shields.io/badge/Groq-Llama_3.3_70B-F55036.svg?style=flat&logoColor=white)](https://groq.com/)
+**A simulation that decides who an emergency room should treat next — safely, fairly, and with an AI assistant reading the intake notes.**
 
-**MedFlow** is an intelligent hospital operations and clinical triage simulation platform. It couples a per-minute discrete-event simulation of Emergency Department (ED) workflows with AI-assisted clinical acuity scoring powered by **Groq** (Llama 3.3 70B), allowing healthcare administrators, researchers, and clinicians to stress-test patient scheduling policies, resource constraints, and surge scenarios.
+Built for **Hack-a-Matics** (Pentagram, Mathematical Society of BMSCE, with BMSCE IEEE Computer Society).
 
----
+<!-- TODO: paste your deployed website link on the line below once it's live -->
+🔗 **Live Demo:** [ADD YOUR LIVE LINK HERE]
 
-## Key Features
-
-- **Clinical ESI Triage Engine**
-  - Implements standard 5-level **Emergency Severity Index (ESI)** logic (Levels 1–5).
-  - Evaluates unstructured clinical nurse intake notes using **Groq's OpenAI-compatible chat API** (default model: `llama-3.3-70b-versatile`).
-  - Seamless, automatic offline fallback to a transparent rule-based clinical keyword scoring engine when no API key is provided or the model call fails.
-  - Detects clinical red flags, estimates required hospital resources, predicts treatment duration, and quantifies deterioration risk.
-  - Supports single-note evaluation and batch ingestion (capped at 25 notes per request).
-
-- **Discrete-Event ED Simulation**
-  - Per-minute discrete-event simulation tracking admissions, waiting rooms, resource allocation, and patient discharge.
-  - Dynamic patient deterioration and reneging modeling (Left Without Being Seen / LWBS if wait times exceed patience thresholds).
-  - Models a shared hospital resource pool of **beds, doctors, and nurses**, with per-ESI-level resource demand and scenario-level capacity events (e.g., a mid-shift physician shortage).
-
-- **Intelligent Patient Scheduling Policies**
-  - **First-Come, First-Served (FCFS)**: Baseline chronological order.
-  - **Strict Clinical Urgency**: Priority driven strictly by acuity (ESI 1 through 5).
-  - **Dynamic Weighted Aging**: Multi-factor non-linear priority scoring combining a clinical safety floor, waiting saturation, deterioration hazard, and resource fit.
-  - **Earliest Deadline First (EDF)**: Prioritizes patients approaching their ESI SLA target wait deadline.
-
-- **Pre-Configured Stress Scenarios**
-  - **Baseline**: Standard operational ED volume.
-  - **Mass Casualty Incident**: Sudden surge of critical trauma cases (ESI 1 & 2) at minute 60.
-  - **Staff Shortage**: Mid-shift reduction in physician and nursing capacity.
-  - **Epidemic Surge**: Sustained +75% arrival rate throughout the shift.
-
-- **Multi-Policy Comparative Benchmarking**
-  - Benchmarks all four scheduling policies concurrently against an identical pseudo-random arrival stream.
-  - Generates comparative metrics on average wait times, SLA compliance, deterioration incidents, renege rates, and resource utilization.
-
-- **Modern Interactive Dashboard & Theme Support**
-  - High-contrast typography optimized for both **Dark Mode** and **Light (White Background)** environments.
-  - Draggable, collapsible widget cards: Run, Queue, Resources, Compare, Outcomes, Triage, and AI Status.
-  - Live queue breakdowns by ESI acuity color coding.
+<!-- TODO: once you have a real license file, keep this line as-is; it already points to LICENSE -->
+📄 **License:** [MIT](./LICENSE)
 
 ---
 
-## Mathematical Foundations & Algorithm Formulation
+## What is this, in simple words
 
-MedFlow incorporates stochastic processes, non-linear priority optimization, and queueing theory to model emergency department patient flow.
+Think of a busy government hospital's emergency ward on a Saturday night.
+Twenty people are sitting in the waiting area. A person with a minor cut
+came in first. A person having chest pain came in five minutes later. If
+the hospital just called people in the order they arrived — like a ration
+shop queue — the chest pain patient would be sitting and waiting while a
+minor cut gets treated first. That is obviously not okay.
 
-```
-+--------------------------------------------------------------------------------------------------+
-|                                  PRIORITY SCORING ENGINE                                          |
-|                                                                                                   |
-|   Score(p, t) = SafetyFloor[ESI_p] + w_u * U(p) + w_w * W(p,t)^alpha + w_r * R(p,t) + w_f * F(p)  |
-+--------------------------------------------------------------------------------------------------+
-          |                      |               |                    |               |
-          v                      v               v                    v               v
-   +--------------+      +--------------+  +-----------------+  +--------------+  +---------------+
-   | Safety Floor |      | Acuity Level |  | Wait Saturation |  | Hazard Risk  |  | Resource Fit  |
-   | ESI 1: +2.0  |      |   (5 - ESI)/4|  | min(1, w/T)^a   |  | 1 - exp(-kw) |  | Free / Demand |
-   | ESI 2: +1.0  |      |   in [0, 1]  |  | bounded at 1.0  |  | in [0, 1)    |  | in [0, 1]     |
-   +--------------+      +--------------+  +-----------------+  +--------------+  +---------------+
-```
+**MedFlow is a working simulation of a smarter system.** It:
 
-### 1. Dynamic Weighted Aging Priority Formula
+- Reads a nurse's rough note about a patient (typed in plain English) and
+  uses an AI model to figure out how serious it is.
+- Keeps track of a fake but realistic stream of patients arriving all
+  through a shift, some calm periods, some sudden rushes (like a mass
+  accident).
+- Decides who gets treated next using different possible "house rules,"
+  and always keeps one rule fixed no matter what: **someone in real
+  danger can never be pushed back just because someone else waited
+  longer.**
+- Shows, with real numbers, which house rule actually keeps people safest
+  and reduces waiting the most — by testing every rule on the exact same
+  group of patients, so the comparison is fair.
 
-In an emergency department, strictly prioritizing by acuity (ESI) causes lower-acuity patients (ESI 3–5) to starve during surges. Conversely, First-Come, First-Served (FCFS) violates clinical safety by treating sprains before heart attacks.
-
-MedFlow implements a **Dynamic Weighted Aging** algorithm that balances clinical safety, waiting-room saturation, physiological deterioration risk, and hospital resource availability:
-
-$$\text{Score}(p, t) = \text{SafetyFloor}(\text{ESI}_p) + w_u \cdot U(p) + w_w \cdot W(p, t)^\alpha + w_r \cdot R(p, t) + w_f \cdot F(p, \mathcal{R}_t)$$
-
-**Normalized Parameter Constraints** — the weights are normalized such that:
-
-$$\sum w_i = w_u + w_w + w_r + w_f = 0.35 + 0.30 + 0.25 + 0.10 = 1.0, \quad \alpha = 1.8$$
-
-#### A. Lexicographic Safety Floor: $\text{SafetyFloor}(\text{ESI}_p)$
-
-To prevent lower-acuity patients who have waited for hours from leapfrogging critical resuscitation cases, a non-linear safety floor is enforced:
-
-$$\text{SafetyFloor}(\text{ESI}_p) = \begin{cases} 2.0 & \text{ESI-1 (Resuscitation)} \\ 1.0 & \text{ESI-2 (Emergent)} \\ 0.0 & \text{ESI-3, 4, 5} \end{cases}$$
-
-Because all other terms are bounded in $[0, 1]$ and their weights sum to $1.0$, the maximum possible score for an ESI-3 patient is $0.0 + 1.0 = 1.0$. An ESI-1 patient (minimum score $2.0$) or ESI-2 patient (minimum score $1.0$) is therefore guaranteed strict priority over ESI 3–5 patients.
-
-#### B. Clinical Acuity / Urgency: $U(p)$
-
-$$U(p) = \frac{5 - \text{ESI}_p}{4} \in [0, 1]$$
-
-| Acuity Tier | Description   | $U(p)$ | Target Wait ($T_{\text{target}}$) | Patience Limit (LWBS) |
-| ----------- | ------------- | ------ | ---------------------------------- | ---------------------- |
-| **ESI-1**   | Resuscitation | $1.00$ | 1 minute                           | Never leaves |
-| **ESI-2**   | Emergent      | $0.75$ | 10 minutes                         | 360 minutes (6 hrs) |
-| **ESI-3**   | Urgent        | $0.50$ | 30 minutes                         | 180 minutes (3 hrs) |
-| **ESI-4**   | Less Urgent   | $0.25$ | 60 minutes                         | 120 minutes (2 hrs) |
-| **ESI-5**   | Non-Urgent    | $0.00$ | 120 minutes                        | 90 minutes (1.5 hrs) |
-
-#### C. Non-Linear Waiting Time Saturation: $W(p, t)^\alpha$
-
-Let $w_p(t) = t - t_{\text{arrival}}$ denote elapsed wait time in minutes:
-
-$$\text{Ratio}(p, t) = \min\left(1.0, \frac{w_p(t)}{T_{\text{target}}(\text{ESI}_p)}\right), \qquad W(p, t)^\alpha = \left(\text{Ratio}(p, t)\right)^\alpha, \quad \alpha = 1.8$$
-
-Because $\alpha > 1$, the waiting penalty accelerates sharply as a patient's wait approaches their clinical target, while the $\min(1.0, \cdot)$ cap guarantees the waiting component never grows unbounded.
-
-#### D. Physiological Deterioration Hazard Function: $R(p, t)$
-
-MedFlow models patient deterioration while unadmitted using an exponential hazard function:
-
-$$R(p, t) = 1 - \exp\left(-k_{\text{ESI}} \cdot w_p(t)\right) \in [0, 1)$$
-
-| ESI Tier  | $k_{\text{ESI}}$ ($\text{min}^{-1}$) | Time to Deterioration Threshold ($R \ge 0.55$) |
-| --------- | -------------------------------------- | ----------------------------------------------- |
-| **ESI-1** | $0.0800$                                | $\approx 10$ minutes |
-| **ESI-2** | $0.0200$                                | $\approx 40$ minutes |
-| **ESI-3** | $0.0050$                                | $\approx 160$ minutes ($2.6$ hrs) |
-| **ESI-4** | $0.0010$                                | $\approx 800$ minutes ($13.3$ hrs) |
-| **ESI-5** | $0.0002$                                | $\approx 4000$ minutes ($66.7$ hrs) |
-
-When $R(p, t) \ge 0.55$, the patient is flagged as **clinically deteriorated** in the waiting room and this is reflected in simulation metrics and event logs.
-
-#### E. Hospital Resource Fit / Feasibility: $F(p, \mathcal{R}_t)$
-
-Prevents head-of-line blocking when a high-priority patient requires resources that are currently occupied:
-
-$$F(p, \mathcal{R}_t) = \frac{\sum_{r \in \mathcal{K}_p} \mathbb{I}\left(A_t(r) \ge D_p(r)\right)}{|\mathcal{K}_p|} \in [0, 1]$$
-
-where $\mathcal{K}_p$ is the set of resource categories required by patient $p$, $D_p(r)$ is $p$'s demand for resource $r$, $A_t(r)$ is available capacity of $r$ at minute $t$, and $\mathbb{I}(\cdot)$ is the indicator function.
-
-**Per-ESI default resource demand** (bed / doctor / nurse pool):
-
-| ESI Level | Required Resources |
-| --------- | ------------------- |
-| ESI-1 | 1 bed, 1 doctor, 2 nurses |
-| ESI-2 | 1 bed, 1 doctor, 1 nurse |
-| ESI-3 | 1 bed, 1 doctor |
-| ESI-4 | 1 bed |
-| ESI-5 | 1 bed |
-
-The simulator greedily allocates resources each tick but **skips** (rather than blocks on) any patient whose full resource bundle isn't currently free, so one high-priority patient waiting on a scarce resource cannot stall lower-priority patients behind them.
-
-### 2. Patient Arrival Process: Non-Homogeneous Poisson Process (NHPP)
-
-Patient arrivals are modeled as an NHPP with time-varying arrival rate $\lambda(t)$:
-
-$$\lambda(t) = \lambda_{\text{base}} \cdot \prod_{e \in \mathcal{E}_{\text{active}}(t)} m_e$$
-
-**Lewis–Shedler thinning algorithm:**
-
-1. Compute the maximum arrival rate $\lambda_{\max} = \sup_{t \in [0, T]} \lambda(t)$.
-2. Generate candidate inter-arrival intervals $\Delta t_k \sim \text{Exponential}(\lambda_{\max})$, so $t_k = t_{k-1} + \Delta t_k$.
-3. Accept candidate arrival $t_k$ with probability $P(\text{accept} \mid t_k) = \lambda(t_k) / \lambda_{\max}$.
-4. For accepted arrivals, draw patient acuity from the scenario's current ESI distribution.
-
-**Treatment service duration** follows a log-normal distribution $S_p \sim \text{Lognormal}(\mu_{\text{ESI}}, \sigma_{\text{ESI}})$:
-
-- **ESI-1**: $\mu = 4.2, \sigma = 0.40 \Rightarrow \mathbb{E}[S] \approx 72$ min
-- **ESI-2**: $\mu = 3.8, \sigma = 0.35 \Rightarrow \mathbb{E}[S] \approx 48$ min
-- **ESI-3**: $\mu = 3.4, \sigma = 0.30 \Rightarrow \mathbb{E}[S] \approx 31$ min
-- **ESI-4**: $\mu = 2.7, \sigma = 0.25 \Rightarrow \mathbb{E}[S] \approx 15$ min
-- **ESI-5**: $\mu = 2.0, \sigma = 0.20 \Rightarrow \mathbb{E}[S] \approx 8$ min
-
-### 3. Queueing Theory Verification & Telemetry
-
-**Erlang-C ($M/M/c$) delay model** benchmarks the empirical simulation against analytical queueing theory using offered load $u = \lambda/\mu$ and utilization $\rho = u/c$:
-
-$$P_0 = \left[ \sum_{k=0}^{c-1} \frac{u^k}{k!} + \frac{u^c}{c!(1 - \rho)} \right]^{-1}, \qquad C(c, u) = \frac{u^c}{c!(1 - \rho)} \cdot P_0, \qquad \mathbb{E}[W_q] = \frac{C(c, u)}{c \mu (1 - \rho)}$$
-
-**Little's Law verification** — every simulation run checks consistency with $L = \lambda W$:
-
-$$\bar{L} = \frac{1}{T} \sum_{t=0}^T Q(t), \qquad \Delta_{\text{Little}} = \frac{|\bar{L} - \lambda_{\text{eff}} \bar{W}|}{\bar{L}} \times 100\%$$
-
-where $\bar{L}$ is the empirical time-averaged queue length and $\bar{W}$ is the mean elapsed waiting time.
+It is not a real hospital system, obviously — it's a hackathon project
+that shows how such a system *could* work, and proves the underlying idea
+is mathematically sound, not just a nice-looking screen.
 
 ---
 
-## Architecture
+## Screenshots
 
-```
-                    +-----------------------------+
-                    |      React 18 + Vite UI     |
-                    |  (Tailwind CSS, Lucide,     |
-                    |   Motion, draggable widgets)|
-                    +--------------+--------------+
-                                   |
-                     HTTP / Proxy  | (Port 5173 -> 8000)
-                                   v
-                    +-----------------------------+
-                    |       FastAPI Backend       |
-                    |      (Uvicorn on :8000)     |
-                    +-------+-------------+-------+
-                            |             |
-          +-----------------+             +-----------------+
-          v                                                 v
-+--------------------+                           +--------------------+
-| Simulation Engine  |                           |  AI Triage Engine  |
-| - Arrivals (NHPP)  |                           | - Groq (OpenAI-    |
-| - Resource Pool    |                           |   compatible API,  |
-| - Dynamic Aging    |                           |   llama-3.3-70b)   |
-| - Erlang-C & Little|                           | - Rule-Based       |
-|   verification     |                           |   Fallback         |
-+--------------------+                           +--------------------+
-```
+<!--
+TODO: add your actual screenshot image files here.
+1. Create a folder in your repo called "screenshots"
+2. Save your app screenshots inside it, named exactly like below
+3. The images will then show up automatically wherever you see them
+   referenced in this file — no other change needed.
+-->
+
+### Step 1 — AI Triage & Live Waiting Room
+A nurse's note goes in, an AI-generated severity rating comes out, and the
+waiting room fills up with patients you can actually see and understand —
+not just numbers.
+
+![Triage screenshot](screenshots/1-triage.png)
+
+### Step 2 — Setup: Choosing the Situation and the House Rule
+Pick how busy the shift is (a calm day, or a sudden crisis), and which
+house rule decides who gets seen next.
+
+![Setup screenshot](screenshots/2-setup.png)
+
+### Step 3 — Watching the Shift Play Out
+The whole shift runs minute by minute — beds filling up, staff getting
+busy, and the waiting room re-sorting itself in real time as the rule
+picks who goes next.
+
+![Run screenshot](screenshots/3-run.png)
+
+### Step 4 — Results and Fair Comparison
+The same patients are run through every house rule, back to back, so you
+can see — honestly, not just claimed — which one actually performs
+better.
+
+![Results screenshot](screenshots/4-results.png)
 
 ---
 
+## Why this matters (the real-world problem)
 
-## Libraries & Dependencies
+Real emergency rooms already use a severity-check system, but doing it
+well — balancing "who is sickest" against "who has waited longest" against
+"do we even have a free bed for them" — is genuinely hard to get right by
+gut feeling alone. Get it wrong, and people who could have been saved end
+up waiting too long. MedFlow shows this decision as a working, testable
+system instead of a guess, and proves — with actual runs, not opinions —
+that a smarter rule beats a plain first-come-first-served line.
 
-### Backend (Python)
-| Library | Purpose |
+---
+
+## Mathematical Foundations
+
+Since Hack-a-Matics is a mathematics-focused hackathon, here's the actual
+maths running under the hood — not just a nice-looking interface. Every
+formula below is really computed by the backend on every simulated
+minute, not decorative.
+
+### 1. The Priority Score
+
+Every waiting patient is scored, every simulated minute, using:
+
+$$P(p, t) = \text{SafetyFloor}(esi) + w_u \cdot \text{Urgency}(p) + w_w \cdot \text{Wait}(p,t)^{1.8} + w_r \cdot \text{Risk}(p,t) + w_f \cdot \text{Fit}(p)$$
+
+The highest-scoring patient gets the next available resource. The score is
+bounded in $[0, 3.0]$.
+
+- **SafetyFloor(esi)** — a fixed minimum added only for the most critical
+  severity levels (ESI 1 and 2). It's large enough that no combination of
+  the other four terms can ever push a lower-severity patient above a
+  freshly-arrived critical one. This is what guarantees the "safety rule
+  that never breaks" mentioned above — it's not a soft preference, it's a
+  hard mathematical floor.
+- **Urgency(p)** $= \frac{5 - esi}{4}$ — converts the 1–5 severity scale
+  into a 0–1 score, so ESI 1 contributes the most and ESI 5 contributes
+  nothing.
+- **Wait(p,t)** $= \min\left(\left(\frac{\text{minutes waited}}{\text{target wait for this patient's ESI}}\right)^{1.8}, 1\right)$
+  — the exponent (1.8) means the score barely rises early in the wait, then
+  climbs sharply as a patient approaches or exceeds their promised target
+  time. This is deliberate: it prevents low-severity patients from being
+  starved indefinitely while still letting acuity dominate for most of the
+  wait.
+- **Risk(p,t)** $= 1 - e^{-k \cdot \text{minutes waited}}$ — an exponential
+  hazard function modelling deterioration probability, where $k$ is a
+  severity-specific decay constant (higher for more severe patients, so
+  their risk climbs faster the longer they wait).
+- **Fit(p)** — the fraction, from 0 to 1, of the patient's required
+  resource bundle (bed, doctor, ICU bed, etc.) that is currently free.
+- $w_u, w_w, w_r, w_f$ — user-adjustable weights (see the sliders in Step
+  2 of the app) that sum to 1.0, letting you tune how much each factor
+  matters relative to the others.
+
+### 2. Little's Law — proving the simulation is physically real
+
+$$L = \lambda \cdot W$$
+
+- $L$ — the average number of patients physically in the waiting room.
+- $\lambda$ — the arrival rate (patients walking in per minute).
+- $W$ — the mean time a patient spends waiting.
+
+This is a proven, unbreakable identity from real queueing theory: in any
+stable queueing system, these three quantities must relate exactly this
+way. The backend independently measures $L$, $\lambda$, and $W$ from its
+own simulated shift and checks that $L \approx \lambda \cdot W$, reporting
+the discrepancy as a percentage. A near-zero discrepancy is proof the
+simulation behaves like a genuine physical queue, not an arbitrary
+random-number generator dressed up to look like one.
+
+### 3. Erlang-C (M/M/c) — the theoretical baseline
+
+At the end of a shift, MedFlow's actual simulated results are compared
+against the classical Erlang-C formula, the standard mathematical model
+used to predict delay in any system with random arrivals and a fixed
+number of parallel servers (originally developed for telephone exchanges,
+now standard in call-centre and hospital-capacity planning).
+
+Offered load: $a = \dfrac{\lambda}{\mu}$, where $\mu$ is the service rate
+per server.
+
+Erlang-C probability of waiting (Erlang's C formula):
+
+$$C(c, a) = \dfrac{\dfrac{a^{c}}{c!}\cdot\dfrac{c}{c-a}}{\displaystyle\sum_{k=0}^{c-1}\dfrac{a^{k}}{k!} + \dfrac{a^{c}}{c!}\cdot\dfrac{c}{c-a}}$$
+
+Expected wait in queue:
+
+$$W_q = \dfrac{C(c, a)}{c\mu - \lambda}$$
+
+- $c$ — number of parallel servers (doctors currently on duty).
+- $\rho = a / c$ — server utilization, i.e. how overloaded the staff is.
+- $W_q$ — the theoretically predicted average wait.
+
+Comparing MedFlow's actual simulated wait time against this theoretical
+$W_q$ shows precisely how much better (or worse) the custom priority
+policies perform versus the standard textbook expectation for a random-
+arrival, fixed-server system.
+
+---
+
+## Main Features
+
+- **AI-Powered Triage** — type a patient's condition in plain English, and
+  an AI model reads it and gives a proper severity rating, what they'll
+  likely need (a bed, a doctor), and how risky it is to make them wait.
+- **Honest Fallback System** — if the AI can't be reached for any reason,
+  the app doesn't hide the problem. It switches to a simple backup
+  checklist and clearly labels the result as a fallback, so you always
+  know whether a real AI answered or a backup rule did.
+- **Multiple Waiting-Room Rules** — compare four different approaches to
+  deciding who's treated next, from the simplest ("first come, first
+  served") to a smarter one that balances urgency, waiting time, and
+  worsening risk together.
+- **A Safety Rule That Never Breaks** — no matter what, a genuinely
+  critical patient can never be pushed behind someone who simply arrived
+  earlier. This is built in permanently, not something you can turn off.
+- **Realistic Simulated Shifts** — patients arrive at random but realistic
+  times, including sudden-crisis scenarios (like a mass accident), so the
+  system gets tested under real pressure, not just a calm day.
+- **Live Resource Tracking** — beds, ICU beds, doctors, and nurses are all
+  limited, and the app shows exactly how full each one is as the shift
+  plays out.
+- **Fair Side-by-Side Comparison** — every house rule is tested on the
+  *exact same* group of patients, arriving at the exact same times, so
+  the comparison between rules is genuinely fair and not a coincidence.
+
+---
+
+## How It Works — Step by Step
+
+1. **Triage** — a patient's condition is described in plain text, and the
+   AI (or, if unavailable, a backup checklist) rates how urgent it is.
+2. **Setup** — you choose how busy the shift is and which house rule
+   decides treatment order.
+3. **Run** — the whole shift plays out automatically, patient by patient,
+   minute by minute, and you can watch beds and staff fill up and the
+   queue re-sort itself.
+4. **Results** — you see real numbers: average waiting time, how many
+   people were treated late, and a fair side-by-side comparison of every
+   house rule tested on the same patients.
+
+---
+
+## Tech Stack
+
+| Part | What we used |
 |---|---|
-| `fastapi` | Web framework powering the REST API |
-| `uvicorn` | ASGI server that runs the FastAPI app |
-| `numpy` | Numerical operations for simulation math |
-| `scipy` | Statistical distributions (log-normal service times, Poisson arrivals) |
-| `openai` | OpenAI-compatible client used to call Groq's chat completions API |
-| `python-dotenv` | Loads `GROQ_API_KEY` / config from `.env` files |
-| `pytest` | Test runner for the backend test suite |
-
-### Frontend (TypeScript / React)
-| Library | Purpose |
-|---|---|
-| `react`, `react-dom` | UI library and DOM renderer (v18.3) |
-| `vite` | Dev server and build tool (v6.2) |
-| `typescript` | Static typing (v5.7) |
-| `tailwindcss` | Utility-first CSS styling (v3.4) |
-| `autoprefixer`, `postcss` | CSS processing pipeline for Tailwind |
-| `lucide-react` | Icon set used across dashboard widgets |
-| `motion` | Animation library (Framer Motion's current package name) |
-| `class-variance-authority`, `clsx`, `tailwind-merge` | Utilities for composing conditional/variant Tailwind class names |
-| `@vitejs/plugin-react` | Vite plugin enabling React Fast Refresh/JSX |
-
-
-
-## Project Structure
-
-```
-MedFlow/
-├── backend/
-│   ├── app/
-│   │   ├── ai/
-│   │   │   └── triage.py          # Groq (OpenAI-compatible) & rule-based triage logic
-│   │   ├── engine/
-│   │   │   ├── arrivals.py        # NHPP patient arrival generator (Lewis-Shedler thinning)
-│   │   │   ├── entities.py        # Patient, ResourcePool data models & ESI constants
-│   │   │   ├── metrics.py         # Wait time, throughput, Erlang-C & Little's Law metrics
-│   │   │   ├── scheduling.py      # FCFS, Urgency, Weighted Aging, EDF policies
-│   │   │   └── simulator.py       # Discrete per-minute hospital ED tick-loop engine
-│   │   └── main.py                # FastAPI endpoints & CORS configuration
-│   ├── tests/
-│   │   ├── test_ai_triage.py      # Unit tests for AI triage & rule-based fallback
-│   │   ├── test_api.py            # API route integration tests
-│   │   └── test_engine.py         # Simulation engine & policy test cases
-│   ├── .env.example               # Backend environment variables template
-│   ├── pytest.ini                 # Pytest configuration
-│   └── requirements.txt           # Python dependencies
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ui/                # DraggableWidgetGrid base component
-│   │   │   └── widgets/           # RunWidget, QueueWidget, ResourcesWidget,
-│   │   │                          # CompareWidget, OutcomesWidget, TriageWidget,
-│   │   │                          # AiStatusWidget
-│   │   ├── lib/utils.ts           # Shared frontend utility helpers
-│   │   ├── api.ts                 # Typed API client & ESI color/theme constants
-│   │   ├── App.tsx                # Main dashboard layout & theme toggle
-│   │   ├── index.css              # Light/Dark high-contrast typography rules
-│   │   └── main.tsx               # React application entry point
-│   ├── package.json               # Frontend dependencies & scripts
-│   ├── tailwind.config.js         # Tailwind CSS styling configuration
-│   ├── tsconfig.json              # TypeScript configuration
-│   └── vite.config.ts             # Vite dev server & /api, /health reverse proxy
-├── .gitignore                     # Git ignore rules for Python, Node, & OS
-├── README.md                      # Project documentation (this file)
-├── run.bat                        # Windows one-click startup script
-└── run.sh                         # Linux / macOS startup script
-```
+| Backend | Python, FastAPI |
+| AI / Triage | Groq API |
+| Frontend | React, TypeScript, Vite |
+| Styling | Tailwind CSS, shadcn/ui |
+| Charts | Recharts |
 
 ---
 
-## Quick Start
-
-### Option 1: Windows (Automated Launcher)
-
-MedFlow includes a Windows batch launcher that automatically checks for Python/Node, initializes the virtual environment, installs dependencies, polls the backend health status, and launches the browser:
-
-```bat
-run.bat
-```
-> You can also simply double-click `run.bat` in Windows File Explorer.
-
-### Option 2: Linux / macOS (Automated Script)
+## Running It Yourself
 
 ```bash
-chmod +x run.sh
-./run.sh
-```
-
-### Option 3: Manual Startup
-
-**1. Setup Backend**
-
-```bash
+# Backend
 cd backend
-
-# Create and activate a virtual environment
 python -m venv .venv
-
-# On Linux/macOS:
-source .venv/bin/activate
-# On Windows (Command Prompt):
-# .venv\Scripts\activate.bat
-# On Windows (PowerShell):
-# .venv\Scripts\Activate.ps1
-
-# Install requirements
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+# add your own GROQ_API_KEY in a .env file inside backend/ before this step
+uvicorn app.main:app --reload --port 8000
 
-# (Optional) Configure Groq API key
-cp .env.example .env
-# Edit .env and insert your GROQ_API_KEY
-
-# Launch FastAPI server
-uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-**2. Setup Frontend**
-
-In a separate terminal:
-
-```bash
+# Frontend (in a separate terminal)
 cd frontend
-
-# Install packages
 npm install
-
-# Start Vite development server
 npm run dev
 ```
 
-Open your browser and navigate to **`http://localhost:5173`**.
+Then open the frontend's address in your browser. A Groq API key is free
+and takes two minutes to get at console.groq.com — the app runs fine even
+without one, but will honestly tell you it's using its backup rules
+instead of real AI until you add a key.
 
 ---
 
-## White Background & High-Contrast Typography
+## About the AI Component
 
-MedFlow is designed with accessible typography for both dark and light-background contexts:
-
-- **Automatic Contrast Adaptation**: Elements placed inside a white or light-background container automatically render text, headers, and labels in high-contrast dark tones, with secondary subtext in high-contrast slate.
-- **Native Select & Option Fix**: Avoids white-on-white text issues in Windows Chromium browsers by enforcing dark background/light text in dark mode and light background/dark text in light mode.
-- **Theme Toggle**: Switch between **Dark Mode** and **Light Mode** at any time from the dashboard header.
-- **Print Optimization**: Formats black-on-white text in print mode.
-
----
-
-## Environment Configuration
-
-Create a `.env` file in the `backend/` directory (you can copy from `backend/.env.example`):
-
-```env
-# MedFlow Configuration
-# Obtain your Groq API Key from the Groq Console (https://console.groq.com/)
-GROQ_API_KEY=your_groq_api_key_here
-
-# Optional model selection (defaults to llama-3.3-70b-versatile)
-MEDFLOW_MODEL=llama-3.3-70b-versatile
-```
-
-If `GROQ_API_KEY` is omitted or empty, MedFlow operates in **offline rule-based mode** without crashing — the AI triage engine transparently falls back to the keyword classifier in `app/ai/triage.py`, and responses are tagged `"source": "rule_fallback"` instead of `"source": "model"`. The dashboard's AI Status widget reflects which mode is currently active.
+MedFlow's triage assistant uses the **Groq API** to read a free-text
+patient description and turn it into a structured severity rating. If
+Groq is unreachable for any reason, the app automatically and visibly
+switches to a simple keyword-based backup instead of pretending the AI
+answered — this is a deliberate, permanent design choice, not a bug.
 
 ---
 
-## API Documentation
+## Known Limitations
 
-When the backend is running, interactive OpenAPI/Swagger documentation is available at:
+Being upfront about what this project does *not* do, since that matters
+more than pretending it's perfect:
 
-- **Interactive Swagger UI**: <http://127.0.0.1:8000/docs>
-- **ReDoc UI**: <http://127.0.0.1:8000/redoc>
-
-### Core Endpoints
-
-| Method | Endpoint            | Description                                                                        |
-| ------ | -------------------- | ----------------------------------------------------------------------------------- |
-| `GET`  | `/health`             | Service health status and Groq API key configuration check.                        |
-| `GET`  | `/api/ai-status`      | Reports Groq readiness and the active model name.                                  |
-| `GET`  | `/api/options`        | Returns available policies, scenarios, default priority-formula weights, and AI status. |
-| `POST` | `/api/simulate`       | Executes a per-minute discrete simulation; returns timeline snapshots and metrics. |
-| `POST` | `/api/compare`        | Executes all 4 scheduling policies concurrently on an identical arrival stream.    |
-| `POST` | `/api/triage`         | Analyzes an unstructured nurse note and returns ESI acuity, resources, and risks.  |
-| `POST` | `/api/triage/batch`   | Evaluates a batch of clinical notes (capped at 25 items per request).              |
+- Hospital resources (beds, doctors) are treated as identical/interchangeable
+  within their category — a real hospital has more nuance than that.
+- Patients are assigned resources one at a time, in priority order — this
+  is simple and fast, but not always the mathematically "best possible"
+  way to assign an entire waiting room at once.
+- The mathematical comparisons used to sanity-check the simulation assume
+  a simplified model of how patients move through the system.
 
 ---
 
-## Running Tests
+## Roadmap / Ideas for Later
 
-```bash
-cd backend
-.venv/bin/pytest
-```
-*(On Windows: `.venv\Scripts\pytest`)*
-
-To build and verify the frontend TypeScript and production bundle:
-
-```bash
-cd frontend
-npm run build
-```
-
----
-
-## Troubleshooting
-
-### Vite Proxy Error: `ECONNREFUSED`
-
-- **Cause**: The frontend called `/api/...` before the backend was listening, or Node resolved `localhost` to IPv6 `::1`.
-- **Fix**:
-  - Ensure the backend is running on port 8000.
-  - `frontend/vite.config.ts` is configured to proxy `/api` and `/health` to `http://127.0.0.1:8000`.
-  - Use `run.bat` (Windows) or `run.sh` (Linux/macOS), which verify backend health before launching Vite.
-
-### Python `bad interpreter`
-
-- **Cause**: A `.venv` folder was copied from another machine or path.
-- **Fix**: Delete `.venv` and let `run.bat` or `run.sh` recreate it:
-
-```bash
-rm -rf backend/.venv
-python -m venv backend/.venv
-backend/.venv/bin/pip install -r backend/requirements.txt
-```
+- A more advanced resource-assignment method that looks at the whole
+  waiting room at once, instead of one patient at a time.
+- Testing each house rule across many random days instead of just one, to
+  show the results hold up consistently.
+- Routing patients across multiple hospital departments, not just one ER.
 
 ---
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License — see the [LICENSE](./LICENSE)
+file for details. In short: you're free to use, copy, modify, and share
+this project, as long as the original license notice stays with it.
+
+---
+
+## Acknowledgements
+
+Built for **Hack-a-Matics**, organised by Pentagram (Mathematical Society
+of BMSCE) with BMSCE IEEE Computer Society.
