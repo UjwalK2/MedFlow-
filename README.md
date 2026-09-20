@@ -11,7 +11,7 @@
 
 ---
 
-## Key Features
+## Key Features:
 
 - **Clinical ESI Triage Engine**:
   - Implements standard 5-level **Emergency Severity Index (ESI)** logic (Levels 1 to 5).
