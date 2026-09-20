@@ -27,15 +27,20 @@ app = FastAPI(
 )
 
 # Enable CORS for localhost:5173 and standard frontend dev servers
+_default_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+# Allow overriding/extending via env var, e.g. FRONTEND_ORIGIN=https://your-app.vercel.app
+_extra_origin = os.environ.get("FRONTEND_ORIGIN", "").strip()
+if _extra_origin:
+    _default_origins.append(_extra_origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "*",
-    ],
+    allow_origins=_default_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
