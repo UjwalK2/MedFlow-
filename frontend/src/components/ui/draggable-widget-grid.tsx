@@ -24,7 +24,7 @@ export function WidgetShell({
   className?: string
 }) {
   return (
-    <div className={cn("flex flex-col justify-between h-full space-y-3", className)}>
+    <div className={cn("flex flex-col justify-between h-full space-y-2", className)}>
       {children}
     </div>
   )
@@ -44,13 +44,13 @@ export function WidgetBig({
   className?: string
 }) {
   return (
-    <div className={cn("space-y-1", className)}>
-      {label && <div className="text-[11px] font-medium uppercase tracking-wider text-zinc-400">{label}</div>}
-      <div className="flex items-baseline gap-2.5 flex-wrap">
-        <div className="text-2xl font-extrabold tracking-tight text-white">{value}</div>
+    <div className={cn("space-y-0.5", className)}>
+      {label && <div className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">{label}</div>}
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <div className="text-xl sm:text-2xl font-extrabold tracking-tight text-white font-mono tabular-nums">{value}</div>
         {badge}
       </div>
-      {subtext && <div className="text-xs text-zinc-400">{subtext}</div>}
+      {subtext && <div className="text-[11px] text-zinc-400">{subtext}</div>}
     </div>
   )
 }
@@ -71,16 +71,16 @@ export function WidgetRow({
   return (
     <div
       className={cn(
-        "flex items-center justify-between text-xs py-1.5 border-b border-zinc-800/50 last:border-0",
+        "flex items-center justify-between text-xs py-1 border-b border-zinc-800/40 last:border-0",
         className
       )}
     >
-      <div className="flex items-center gap-2 text-zinc-400 truncate">
-        {dotColor && <span className={cn("w-2 h-2 rounded-full flex-shrink-0", dotColor)} />}
+      <div className="flex items-center gap-1.5 text-zinc-400 truncate text-[11px]">
+        {dotColor && <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", dotColor)} />}
         {icon && <span className="text-zinc-500">{icon}</span>}
         <span className="truncate">{label}</span>
       </div>
-      <div className="font-semibold text-zinc-200 flex-shrink-0 ml-2">{value}</div>
+      <div className="font-semibold text-zinc-200 flex-shrink-0 ml-2 font-mono tabular-nums text-[11px]">{value}</div>
     </div>
   )
 }
@@ -310,7 +310,7 @@ export function DraggableWidgetGrid<T extends GridItem = GridItem>({
           axis="y"
           values={items}
           onReorder={handleReorder}
-          className={cn("grid gap-4 auto-rows-fr", gridColsClass)}
+          className={cn("grid gap-2.5 auto-rows-fr", gridColsClass)}
         >
           <AnimatePresence>
             {visibleItems.map((item) => {
@@ -336,7 +336,7 @@ export function DraggableWidgetGrid<T extends GridItem = GridItem>({
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.2 }}
                   className={cn(
-                    "group bg-zinc-900/90 border border-zinc-800/80 rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-between",
+                    "group bg-zinc-900/90 border border-zinc-800/80 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-between",
                     colSpanClass
                   )}
                   whileDrag={{
@@ -346,13 +346,13 @@ export function DraggableWidgetGrid<T extends GridItem = GridItem>({
                   }}
                 >
                   {/* Widget Header */}
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/70 bg-zinc-900/80 select-none">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/70 bg-zinc-900/80 select-none">
                     <div className="flex items-center gap-2">
                       <div
-                        className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-zinc-600 group-hover:text-zinc-400 hover:text-zinc-200 transition-colors"
+                        className="cursor-grab active:cursor-grabbing p-0.5 -ml-0.5 text-zinc-600 group-hover:text-zinc-400 hover:text-zinc-200 transition-colors"
                         title="Drag to reorder"
                       >
-                        <GripVertical className="w-4 h-4" />
+                        <GripVertical className="w-3.5 h-3.5" />
                       </div>
                       {item.icon && <div className="text-zinc-400">{item.icon}</div>}
                       <div>
@@ -360,7 +360,7 @@ export function DraggableWidgetGrid<T extends GridItem = GridItem>({
                           {item.title}
                         </h3>
                         {item.subtitle && (
-                          <p className="text-[11px] text-zinc-500 line-clamp-1">{item.subtitle}</p>
+                          <p className="text-[10px] text-zinc-500 line-clamp-1">{item.subtitle}</p>
                         )}
                       </div>
                     </div>
@@ -411,7 +411,7 @@ export function DraggableWidgetGrid<T extends GridItem = GridItem>({
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="p-4 flex-1 flex flex-col justify-between"
+                        className="p-3 flex-1 flex flex-col justify-between"
                       >
                         {getItemContent(item)}
                       </motion.div>
@@ -423,21 +423,21 @@ export function DraggableWidgetGrid<T extends GridItem = GridItem>({
           </AnimatePresence>
         </Reorder.Group>
       ) : (
-        <div className={cn("grid gap-4", gridColsClass)}>
+        <div className={cn("grid gap-2.5", gridColsClass)}>
           {visibleItems.map((item) => {
             const isMinimized = minimizedMap[item.id] ?? item.minimized ?? false
             return (
               <div
                 key={item.id}
-                className="bg-zinc-900/90 border border-zinc-800/80 rounded-2xl overflow-hidden flex flex-col"
+                className="bg-zinc-900/90 border border-zinc-800/80 rounded-xl overflow-hidden flex flex-col"
               >
-                <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/70 bg-zinc-900/80">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/70 bg-zinc-900/80">
                   <div className="flex items-center gap-2">
                     {item.icon && <div className="text-zinc-400">{item.icon}</div>}
                     <h3 className="text-xs font-semibold text-zinc-200">{item.title}</h3>
                   </div>
                 </div>
-                {!isMinimized && <div className="p-4 flex-1">{getItemContent(item)}</div>}
+                {!isMinimized && <div className="p-3 flex-1">{getItemContent(item)}</div>}
               </div>
             )
           })}

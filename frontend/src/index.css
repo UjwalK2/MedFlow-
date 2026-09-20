@@ -57,6 +57,12 @@
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  .font-mono,
+  .tabular-nums {
+    font-variant-numeric: tabular-nums !important;
+    font-feature-settings: "tnum" 1, "zero" 1 !important;
+  }
 }
 
 /* ==========================================================================
