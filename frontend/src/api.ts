@@ -2,6 +2,8 @@
  * MedFlow API Client and Clinical ESI Triage Constants
  */
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+
 // ============================================================================
 // ESI Clinical Color and Severity Theme Constants (Dark Theme Optimized)
 // ============================================================================
@@ -306,14 +308,14 @@ export const api = {
    * Fetches available policies, scenarios, default weights, and AI status.
    */
   getOptions(): Promise<OptionsResponse> {
-    return fetchJson<OptionsResponse>("/api/options")
+    return fetchJson<OptionsResponse>(`${API_BASE}/options`)
   },
 
   /**
    * Runs a full discrete per-minute simulation.
    */
   simulate(req: SimulateRequest = {}): Promise<SimulateResponse> {
-    return fetchJson<SimulateResponse>("/api/simulate", {
+    return fetchJson<SimulateResponse>(`${API_BASE}/simulate`, {
       method: "POST",
       body: JSON.stringify(req),
     })
@@ -323,7 +325,7 @@ export const api = {
    * Compares all four policies against a single identical arrival stream.
    */
   compare(req: CompareRequest = {}): Promise<CompareResponse> {
-    return fetchJson<CompareResponse>("/api/compare", {
+    return fetchJson<CompareResponse>(`${API_BASE}/compare`, {
       method: "POST",
       body: JSON.stringify(req),
     })
@@ -333,7 +335,7 @@ export const api = {
    * Evaluates a single triage clinical note using GenAI (or rule fallback).
    */
   triage(req: TriageNoteRequest): Promise<TriageResponse> {
-    return fetchJson<TriageResponse>("/api/triage", {
+    return fetchJson<TriageResponse>(`${API_BASE}/triage`, {
       method: "POST",
       body: JSON.stringify(req),
     })
@@ -343,7 +345,7 @@ export const api = {
    * Evaluates a batch of clinical triage notes (capped at 25 items).
    */
   triageBatch(req: TriageBatchRequest): Promise<TriageBatchResponse> {
-    return fetchJson<TriageBatchResponse>("/api/triage/batch", {
+    return fetchJson<TriageBatchResponse>(`${API_BASE}/triage/batch`, {
       method: "POST",
       body: JSON.stringify(req),
     })
@@ -353,7 +355,7 @@ export const api = {
    * Checks whether the Groq API key is configured.
    */
   getAIStatus(): Promise<AIStatusResponse> {
-    return fetchJson<AIStatusResponse>("/api/ai-status")
+    return fetchJson<AIStatusResponse>(`${API_BASE}/ai-status`)
   },
 
   /**
