@@ -366,14 +366,15 @@ MedFlow is designed with accessible typography for both dark and white/light bac
 Create a `.env` file in the `backend/` directory (you can copy from `backend/.env.example`):
 
 ```ini
-# Obtain your Gemini API Key from Google AI Studio (https://aistudio.google.com/)
-GEMINI_API_KEY=your_gemini_api_key_here
+# MedFlow Configuration
+# Obtain your Groq API Key from Groq Console (https://console.groq.com/)
+GROQ_API_KEY=your_groq_api_key_here
 
-# Model selection (defaults to gemini-3.5-flash)
-MEDFLOW_MODEL=gemini-3.5-flash
+# Optional model selection (defaults to llama-3.3-70b-versatile)
+MEDFLOW_MODEL=llama-3.3-70b-versatile
 ```
 
-If `GEMINI_API_KEY` is omitted or empty, MedFlow operates in **offline rule-based mode** without crashing. The dashboard displays an indicator confirming the AI engine status.
+If `GROQ_API_KEY` is omitted or empty, MedFlow operates in **offline rule-based mode** without crashing. The dashboard displays an indicator confirming the AI engine status.
 
 ---
 
