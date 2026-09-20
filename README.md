@@ -93,6 +93,63 @@ that a smarter rule beats a plain first-come-first-served line.
 
 ---
 
+<<<<<<< HEAD
+## Main Features
+
+- **AI-Powered Triage** — type a patient's condition in plain English, and
+  an AI model reads it and gives a proper severity rating, what they'll
+  likely need (a bed, a doctor), and how risky it is to make them wait.
+- **Honest Fallback System** — if the AI can't be reached for any reason,
+  the app doesn't hide the problem. It switches to a simple backup
+  checklist and clearly labels the result as a fallback, so you always
+  know whether a real AI answered or a backup rule did.
+- **Multiple Waiting-Room Rules** — compare four different approaches to
+  deciding who's treated next, from the simplest ("first come, first
+  served") to a smarter one that balances urgency, waiting time, and
+  worsening risk together.
+- **A Safety Rule That Never Breaks** — no matter what, a genuinely
+  critical patient can never be pushed behind someone who simply arrived
+  earlier. This is built in permanently, not something you can turn off.
+- **Realistic Simulated Shifts** — patients arrive at random but realistic
+  times, including sudden-crisis scenarios (like a mass accident), so the
+  system gets tested under real pressure, not just a calm day.
+- **Live Resource Tracking** — beds, ICU beds, doctors, and nurses are all
+  limited, and the app shows exactly how full each one is as the shift
+  plays out.
+- **Fair Side-by-Side Comparison** — every house rule is tested on the
+  *exact same* group of patients, arriving at the exact same times, so
+  the comparison between rules is genuinely fair and not a coincidence.
+
+---
+
+## How It Works — Step by Step
+
+1. **Triage** — a patient's condition is described in plain text, and the
+   AI (or, if unavailable, a backup checklist) rates how urgent it is.
+2. **Setup** — you choose how busy the shift is and which house rule
+   decides treatment order.
+3. **Run** — the whole shift plays out automatically, patient by patient,
+   minute by minute, and you can watch beds and staff fill up and the
+   queue re-sort itself.
+4. **Results** — you see real numbers: average waiting time, how many
+   people were treated late, and a fair side-by-side comparison of every
+   house rule tested on the same patients.
+
+---
+
+## Tech Stack
+
+| Part | What we used |
+|---|---|
+| Backend | Python, FastAPI |
+| AI / Triage | Groq API |
+| Frontend | React, TypeScript, Vite |
+| Styling | Tailwind CSS, shadcn/ui |
+| Charts | Recharts |
+
+---
+
+=======
 ## Mathematical Foundations
 
 Since Hack-a-Matics is a mathematics-focused hackathon, here's the actual
@@ -235,6 +292,7 @@ arrival, fixed-server system.
 
 ---
 
+>>>>>>> 641f7583a1040e7d9f37090c1c42b200e9e928f7
 ## Running It Yourself
 
 ```bash
