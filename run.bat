@@ -99,8 +99,8 @@ if %ERRORLEVEL% neq 0 (
 )
 
 cd /d "%FRONTEND_DIR%"
-if not exist "%FRONTEND_DIR%\node_modules" (
-    echo   Installing frontend npm packages (this may take a moment)...
+if not exist "%FRONTEND_DIR%\node_modules\recharts" (
+    echo   Installing frontend npm packages (including recharts)...
     call npm install
     if !ERRORLEVEL! neq 0 (
         echo [ERROR] npm install failed.

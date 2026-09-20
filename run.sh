@@ -57,8 +57,8 @@ done
 # Check frontend
 if [ -f "$ROOT_DIR/frontend/package.json" ]; then
   cd "$ROOT_DIR/frontend"
-  if [ ! -d "node_modules" ]; then
-    echo "Installing frontend dependencies..."
+  if [ ! -d "node_modules" ] || [ ! -d "node_modules/recharts" ]; then
+    echo "Installing frontend dependencies (including recharts)..."
     npm install
   fi
   echo "Starting MedFlow frontend on http://localhost:5173..."
