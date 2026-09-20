@@ -208,6 +208,35 @@ where $\bar{L}$ is the empirical time-averaged queue length and $\bar{W}$ is the
 
 ---
 
+
+## Libraries & Dependencies
+
+### Backend (Python)
+| Library | Purpose |
+|---|---|
+| `fastapi` | Web framework powering the REST API |
+| `uvicorn` | ASGI server that runs the FastAPI app |
+| `numpy` | Numerical operations for simulation math |
+| `scipy` | Statistical distributions (log-normal service times, Poisson arrivals) |
+| `openai` | OpenAI-compatible client used to call Groq's chat completions API |
+| `python-dotenv` | Loads `GROQ_API_KEY` / config from `.env` files |
+| `pytest` | Test runner for the backend test suite |
+
+### Frontend (TypeScript / React)
+| Library | Purpose |
+|---|---|
+| `react`, `react-dom` | UI library and DOM renderer (v18.3) |
+| `vite` | Dev server and build tool (v6.2) |
+| `typescript` | Static typing (v5.7) |
+| `tailwindcss` | Utility-first CSS styling (v3.4) |
+| `autoprefixer`, `postcss` | CSS processing pipeline for Tailwind |
+| `lucide-react` | Icon set used across dashboard widgets |
+| `motion` | Animation library (Framer Motion's current package name) |
+| `class-variance-authority`, `clsx`, `tailwind-merge` | Utilities for composing conditional/variant Tailwind class names |
+| `@vitejs/plugin-react` | Vite plugin enabling React Fast Refresh/JSX |
+
+
+
 ## Project Structure
 
 ```
